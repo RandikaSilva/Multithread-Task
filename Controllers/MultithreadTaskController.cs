@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
 
 namespace YourNamespace.Controllers
 {
@@ -7,13 +8,15 @@ namespace YourNamespace.Controllers
     public class MultithreadTaskController : ControllerBase
     {
         private static int _counter = 0;
-        private int incrementsPerThread = 1000000;
+        private int incrementsPerThread = 10000000;
 
         [HttpGet("threadSafe")]
         public async Task<IActionResult> GetThreadSafe()
         {
             _counter = 0; 
             var tasks = new List<Task>();
+
+            var stopwatch = Stopwatch.StartNew();
 
             for (int i = 0; i < incrementsPerThread; i++)
             {
@@ -22,7 +25,10 @@ namespace YourNamespace.Controllers
 
             await Task.WhenAll(tasks);
 
-            return Ok(new { message = "Thread safe count", count = _counter });
+            stopwatch.Stop();
+            var execTime = stopwatch.ElapsedMilliseconds;
+
+            return Ok(new { message = "Thread safe count", count = _counter, execTime = execTime.ToString() });
         }
 
         [HttpGet("threadUnsafe")]
@@ -31,6 +37,8 @@ namespace YourNamespace.Controllers
             _counter = 0; 
             var tasks = new List<Task>();
 
+            var stopwatch = Stopwatch.StartNew();
+
             for (int i = 0; i < incrementsPerThread; i++)
             {
                 tasks.Add(Task.Run(() => IncrementCounterThreadUnsafe()));
@@ -38,7 +46,10 @@ namespace YourNamespace.Controllers
 
             await Task.WhenAll(tasks);
 
-            return Ok(new { message = "thread unsafe count", count = _counter });
+            stopwatch.Stop();
+            var execTime = stopwatch.ElapsedMilliseconds;
+
+            return Ok(new { message = "thread unsafe count", count = _counter , execTime = execTime.ToString() });
         }
 
         private void IncrementCounterThreadSafe()
